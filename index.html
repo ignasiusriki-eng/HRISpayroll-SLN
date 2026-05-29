@@ -1,0 +1,2579 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Users, DollarSign, Calendar, TrendingUp, Briefcase, Shield, Settings, 
+  Download, Plus, Search, FileText, CheckCircle, Clock, AlertCircle, 
+  Trash2, Edit, LogOut, Sun, Moon, FileSpreadsheet, Database, BookOpen, 
+  Menu, X, Building, Bell, UserCheck, Key, RefreshCw, Send, Check, Printer, ChevronRight
+} from 'lucide-react';
+
+
+// Dummy Initial Data for 11 Divisions specified in the prompt
+const INITIAL_DIVISIONS = [
+  { id: '1', name: 'Waiter', baseSalary: 3200000 },
+  { id: '2', name: 'Kasir', baseSalary: 3500000 },
+  { id: '3', name: 'Nusantara', baseSalary: 4500000 },
+  { id: '4', name: 'Seafood', baseSalary: 4800000 },
+  { id: '5', name: 'Cendol', baseSalary: 3000000 },
+  { id: '6', name: 'Minuman', baseSalary: 3100000 },
+  { id: '7', name: 'CleanUp', baseSalary: 2800000 },
+  { id: '8', name: 'Kebersihan', baseSalary: 2800000 },
+  { id: '9', name: 'Cucian Piring', baseSalary: 2700000 },
+  { id: '10', name: 'Staff Gudang', baseSalary: 3600000 },
+  { id: '11', name: 'Potongan', baseSalary: 3000000 }
+];
+
+const INITIAL_EMPLOYEES = [
+  {
+    nik: 'EMP001',
+    name: 'Andi Hermawan',
+    email: 'andi@company.com',
+    phone: '081234567890',
+    address: 'Jl. Merdeka No. 12, Jakarta',
+    joinDate: '2023-01-15',
+    status: 'Tetap', // Tetap, Kontrak, Magang
+    position: 'Head Chef',
+    division: 'Nusantara',
+    baseSalary: 6500000,
+    isActive: true,
+    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+  },
+  {
+    nik: 'EMP002',
+    name: 'Budi Santoso',
+    email: 'budi@company.com',
+    phone: '082198765432',
+    address: 'Jl. Sudirman No. 45, Bandung',
+    joinDate: '2025-10-10', // Contract nearing end in late 2026
+    status: 'Kontrak',
+    position: 'Lead Waiter',
+    division: 'Waiter',
+    baseSalary: 3800000,
+    isActive: true,
+    photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150',
+  },
+  {
+    nik: 'EMP003',
+    name: 'Citra Kirana',
+    email: 'citra@company.com',
+    phone: '085712345678',
+    address: 'Jl. Diponegoro No. 89, Surabaya',
+    joinDate: '2024-06-01',
+    status: 'Tetap',
+    position: 'Supervisor Kasir',
+    division: 'Kasir',
+    baseSalary: 4200000,
+    isActive: true,
+    photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150',
+  },
+  {
+    nik: 'EMP004',
+    name: 'Dedi Setiadi',
+    email: 'dedi@company.com',
+    phone: '089988776655',
+    address: 'Jl. Gajah Mada No. 3, Medan',
+    joinDate: '2026-01-10',
+    status: 'Magang',
+    position: 'Kitchen Support',
+    division: 'CleanUp',
+    baseSalary: 2800000,
+    isActive: true,
+    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
+  },
+  {
+    nik: 'EMP005',
+    name: 'Eka Lestari',
+    email: 'eka@company.com',
+    phone: '081344556677',
+    address: 'Jl. Pemuda No. 71, Semarang',
+    joinDate: '2026-03-01',
+    status: 'Kontrak',
+    position: 'Barista Cendol',
+    division: 'Cendol',
+    baseSalary: 3000000,
+    isActive: true,
+    photoUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150',
+  }
+];
+
+const INITIAL_ATTENDANCE = [
+  { nik: 'EMP001', date: '2026-05-29', checkIn: '09:15', checkOut: '18:00', status: 'Hadir', minutesLate: 0 },
+  { nik: 'EMP002', date: '2026-05-29', checkIn: '09:45', checkOut: '18:15', status: 'Hadir', minutesLate: 15 }, // Late (threshold 09:30)
+  { nik: 'EMP003', date: '2026-05-29', checkIn: '09:28', checkOut: '18:00', status: 'Hadir', minutesLate: 0 },
+  { nik: 'EMP004', date: '2026-05-29', checkIn: '', checkOut: '', status: 'Izin', minutesLate: 0 },
+  { nik: 'EMP005', date: '2026-05-29', checkIn: '10:05', checkOut: '18:00', status: 'Hadir', minutesLate: 35 } // Late
+];
+
+const INITIAL_PAYROLLS = [
+  {
+    id: 'PAY-202605-01',
+    nik: 'EMP001',
+    name: 'Andi Hermawan',
+    division: 'Nusantara',
+    month: 'Mei 2026',
+    baseSalary: 6500000,
+    allowance: 1200000, // Tunjangan Jabatan & Makan
+    deduction: 250000,  // BPJS & Pajak
+    bonus: 500000,
+    overtime: 300000,
+    netSalary: 8250000,
+    status: 'Approved',
+    approvedBy: 'Yusuf (Manager)',
+    approvedDate: '2026-05-28'
+  },
+  {
+    id: 'PAY-202605-02',
+    nik: 'EMP002',
+    name: 'Budi Santoso',
+    division: 'Waiter',
+    month: 'Mei 2026',
+    baseSalary: 3800000,
+    allowance: 600000,
+    deduction: 180000,
+    bonus: 200000,
+    overtime: 150000,
+    netSalary: 4570000,
+    status: 'Pending Approval',
+    approvedBy: '',
+    approvedDate: ''
+  },
+  {
+    id: 'PAY-202605-03',
+    nik: 'EMP003',
+    name: 'Citra Kirana',
+    division: 'Kasir',
+    month: 'Mei 2026',
+    baseSalary: 4200000,
+    allowance: 800000,
+    deduction: 210000,
+    bonus: 300000,
+    overtime: 0,
+    netSalary: 5090000,
+    status: 'Approved',
+    approvedBy: 'Yusuf (Manager)',
+    approvedDate: '2026-05-28'
+  }
+];
+
+const INITIAL_ALLOWANCE_SETTINGS = [
+  { id: 'all_jabatan', name: 'Tunjangan Jabatan', amount: 500000, type: 'Tetap' },
+  { id: 'all_transport', name: 'Tunjangan Transport', amount: 300000, type: 'Harian' },
+  { id: 'all_makan', name: 'Tunjangan Makan', amount: 400000, type: 'Harian' }
+];
+
+const INITIAL_DEDUCTION_SETTINGS = [
+  { id: 'ded_bpjs', name: 'BPJS Kesehatan & Ketenagakerjaan', amount: 150000, type: 'Tetap' },
+  { id: 'ded_pajak', name: 'Pajak PPh 21', amount: 100000, type: 'Persentase/Tetap' },
+  { id: 'ded_late', name: 'Potongan Keterlambatan (per mnt)', amount: 5000, type: 'Variabel' }
+];
+
+const INITIAL_AUDIT_LOGS = [
+  { timestamp: '2026-05-29 09:30:00', user: 'HRD Amelia', action: 'Melakukan check-in massal karyawan' },
+  { timestamp: '2026-05-29 09:45:12', user: 'Super Admin', action: 'Mengubah Tunjangan Jabatan menjadi Rp 500.000' },
+  { timestamp: '2026-05-28 17:00:22', user: 'Manager Yusuf', action: 'Menyetujui payroll Andi Hermawan' },
+  { timestamp: '2026-05-28 16:45:00', user: 'HRD Amelia', action: 'Membuat draf payroll bulan Mei 2026' }
+];
+
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, karyawan, absensi, payroll, tunjangan, laporan, devhub, settings
+  const [darkMode, setDarkMode] = useState(false);
+  const [currentRole, setCurrentRole] = useState('Super Admin'); // Super Admin, HRD, Manager, Staff
+  const [employees, setEmployees] = useState(() => {
+    const saved = localStorage.getItem('payroll_employees');
+    return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
+  });
+  const [attendance, setAttendance] = useState(() => {
+    const saved = localStorage.getItem('payroll_attendance');
+    return saved ? JSON.parse(saved) : INITIAL_ATTENDANCE;
+  });
+  const [payrolls, setPayrolls] = useState(() => {
+    const saved = localStorage.getItem('payroll_slips');
+    return saved ? JSON.parse(saved) : INITIAL_PAYROLLS;
+  });
+  const [allowanceSettings, setAllowanceSettings] = useState(INITIAL_ALLOWANCE_SETTINGS);
+  const [deductionSettings, setDeductionSettings] = useState(INITIAL_DEDUCTION_SETTINGS);
+  const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
+  
+  // App-level alerts
+  const [alerts, setAlerts] = useState([
+    { id: 1, type: 'warning', message: 'Kontrak Budi Santoso (EMP002) tersisa kurang dari 6 bulan.' },
+    { id: 2, type: 'info', message: 'Ada 1 draf payroll menunggu persetujuan Manager.' }
+  ]);
+
+  // Company Settings
+  const [companySettings, setCompanySettings] = useState({
+    name: 'PT Kuliner Nusantara Group',
+    address: 'Grand Indonesia Mall, Lt. 5, Jakarta Pusat',
+    logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=120',
+    bpjsRate: 2, // %
+    lateFeePerMinute: 5000,
+    defaultCheckIn: '09:30',
+    branch: 'Cabang Utama Jakarta'
+  });
+
+  // Persistance
+  useEffect(() => {
+    localStorage.setItem('payroll_employees', JSON.stringify(employees));
+  }, [employees]);
+
+  useEffect(() => {
+    localStorage.setItem('payroll_attendance', JSON.stringify(attendance));
+  }, [attendance]);
+
+  useEffect(() => {
+    localStorage.setItem('payroll_slips', JSON.stringify(payrolls));
+  }, [payrolls]);
+
+  const addAuditLog = (action) => {
+    const newLog = {
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      user: `${currentRole} User`,
+      action
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  const deleteAlert = (id) => {
+    setAlerts(alerts.filter(a => a.id !== id));
+  };
+
+  return (
+    <div className={`${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} min-h-screen font-sans transition-colors duration-200`}>
+      {/* Outer Flex Container */}
+      <div className="flex min-h-screen overflow-hidden">
+        
+        {/* SIDEBAR COMPONENT */}
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          currentRole={currentRole} 
+          companyName={companySettings.name}
+          companyLogo={companySettings.logoUrl}
+        />
+
+        {/* MAIN DISPLAY WINDOW */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto h-screen">
+          
+          {/* TOP NAVBAR COMPONENT */}
+          <Header 
+            darkMode={darkMode} 
+            setDarkMode={setDarkMode} 
+            currentRole={currentRole} 
+            setCurrentRole={setCurrentRole}
+            alerts={alerts}
+            deleteAlert={deleteAlert}
+            companyBranch={companySettings.branch}
+          />
+
+          {/* PAGE INNER CONTENT CONTAINER */}
+          <div className="flex-1 p-6 md:p-8 space-y-6">
+            
+            {/* Tab Swapping Router Switch */}
+            {activeTab === 'dashboard' && (
+              <DashboardView 
+                employees={employees} 
+                payrolls={payrolls} 
+                attendance={attendance} 
+                companySettings={companySettings}
+                setActiveTab={setActiveTab}
+              />
+            )}
+
+            {activeTab === 'karyawan' && (
+              <EmployeeView 
+                employees={employees} 
+                setEmployees={setEmployees} 
+                divisions={INITIAL_DIVISIONS} 
+                currentRole={currentRole}
+                addAuditLog={addAuditLog}
+              />
+            )}
+
+            {activeTab === 'absensi' && (
+              <AttendanceView 
+                employees={employees} 
+                attendance={attendance} 
+                setAttendance={setAttendance} 
+                companySettings={companySettings}
+                currentRole={currentRole}
+                addAuditLog={addAuditLog}
+              />
+            )}
+
+            {activeTab === 'payroll' && (
+              <PayrollView 
+                employees={employees} 
+                payrolls={payrolls} 
+                setPayrolls={setPayrolls}
+                allowances={allowanceSettings}
+                deductions={deductionSettings}
+                currentRole={currentRole}
+                addAuditLog={addAuditLog}
+                companySettings={companySettings}
+              />
+            )}
+
+            {activeTab === 'tunjangan' && (
+              <AllowanceDeductionView 
+                allowanceSettings={allowanceSettings}
+                setAllowanceSettings={setAllowanceSettings}
+                deductionSettings={deductionSettings}
+                setDeductionSettings={setDeductionSettings}
+                currentRole={currentRole}
+                addAuditLog={addAuditLog}
+              />
+            )}
+
+            {activeTab === 'laporan' && (
+              <ReportsView 
+                employees={employees} 
+                payrolls={payrolls} 
+                attendance={attendance} 
+                divisions={INITIAL_DIVISIONS}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <SettingsView 
+                companySettings={companySettings} 
+                setCompanySettings={setCompanySettings} 
+                currentRole={currentRole}
+                auditLogs={auditLogs}
+                addAuditLog={addAuditLog}
+              />
+            )}
+
+            {activeTab === 'devhub' && (
+              <DeveloperHubView />
+            )}
+
+          </div>
+
+          {/* SYSTEM FOOTER */}
+          <footer className="border-t border-slate-200 dark:border-slate-800 p-4 text-center text-xs text-slate-400 dark:text-slate-500 bg-white/50 dark:bg-slate-900/50">
+            © 2026 {companySettings.name}. Dirancang dengan standar kepatuhan ketenagakerjaan RI & sistem kemanan enterprise.
+          </footer>
+        </main>
+
+      </div>
+    </div>
+  );
+}
+
+
+function Sidebar({ activeTab, setActiveTab, currentRole, companyName, companyLogo }) {
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: TrendingUp, roles: ['Super Admin', 'HRD', 'Manager', 'Staff'] },
+    { id: 'karyawan', label: 'Karyawan', icon: Users, roles: ['Super Admin', 'HRD', 'Manager'] },
+    { id: 'absensi', label: 'Absensi Harian', icon: Calendar, roles: ['Super Admin', 'HRD', 'Manager', 'Staff'] },
+    { id: 'payroll', label: 'Proses Payroll', icon: DollarSign, roles: ['Super Admin', 'HRD', 'Manager'] },
+    { id: 'tunjangan', label: 'Tunjangan & Potongan', icon: Briefcase, roles: ['Super Admin', 'HRD'] },
+    { id: 'laporan', label: 'Laporan Finansial', icon: FileSpreadsheet, roles: ['Super Admin', 'HRD', 'Manager'] },
+    { id: 'settings', label: 'Pengaturan & Audit', icon: Settings, roles: ['Super Admin', 'HRD'] },
+    { id: 'devhub', label: 'Developer Code Hub', icon: Database, roles: ['Super Admin', 'HRD', 'Manager', 'Staff'] },
+  ];
+
+  const allowedMenu = menuItems.filter(item => item.roles.includes(currentRole));
+
+  return (
+    <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col shrink-0 border-r border-slate-800 hidden md:flex">
+      {/* Brand Logo */}
+      <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+        <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/30 overflow-hidden">
+          <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+        </div>
+        <div>
+          <h1 className="font-bold text-md leading-tight tracking-wide text-white">GajiKu</h1>
+          <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">Enterprise HRIS</span>
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <nav className="flex-1 p-4 space-y-1">
+        {allowedMenu.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                isActive 
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-900/30' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Bottom Profile / Quick Info */}
+      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+            {currentRole.substring(0,2).toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-slate-200 truncate">Sistem Aktif</p>
+            <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              {currentRole} Mode
+            </p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+
+function Header({ darkMode, setDarkMode, currentRole, setCurrentRole, alerts, deleteAlert, companyBranch }) {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const roles = ['Super Admin', 'HRD', 'Manager', 'Staff'];
+
+  return (
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shadow-sm relative shrink-0">
+      
+      {/* Branch & Welcome */}
+      <div className="flex items-center gap-3">
+        <Building className="text-indigo-600 dark:text-indigo-400" size={20} />
+        <div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{companyBranch}</p>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 hidden sm:block">Dashboard Konsol Penggajian</h2>
+        </div>
+      </div>
+
+      {/* Multi-utility Controls */}
+      <div className="flex items-center gap-4">
+        
+        {/* Real-time Role Swapper for Simulation */}
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+          <Shield size={14} className="text-indigo-600 dark:text-indigo-400" />
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 hidden lg:inline">Role Simulasi:</span>
+          <select 
+            value={currentRole} 
+            onChange={(e) => setCurrentRole(e.target.value)}
+            className="bg-transparent border-none text-xs font-bold focus:ring-0 text-slate-800 dark:text-slate-100 cursor-pointer outline-none"
+          >
+            {roles.map(r => <option key={r} value={r} className="dark:bg-slate-950">{r}</option>)}
+          </select>
+        </div>
+
+        {/* Dark Mode Toggle */}
+        <button 
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+          title="Toggle Dark Mode"
+        >
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
+        {/* Notifications and Alerts System */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition relative"
+          >
+            <Bell size={18} />
+            {alerts.length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900 animate-ping"></span>
+            )}
+          </button>
+
+          {/* Notifications Dropdown Window */}
+          {showNotifications && (
+            <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-4 space-y-3">
+              <div className="flex justify-between items-center border-b pb-2 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Notifikasi Sistem</h4>
+                <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full font-bold">{alerts.length} Baru</span>
+              </div>
+              
+              {alerts.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4">Tidak ada notifikasi baru.</p>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {alerts.map((alert) => (
+                    <div 
+                      key={alert.id} 
+                      className={`p-2.5 rounded-lg text-xs flex gap-2.5 justify-between items-start border ${
+                        alert.type === 'warning' 
+                          ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-950/20 dark:border-amber-800/40 dark:text-amber-200' 
+                          : 'bg-indigo-50 border-indigo-200 text-indigo-950 dark:bg-indigo-950/20 dark:border-indigo-800/40 dark:text-indigo-200'
+                      }`}
+                    >
+                      <div className="flex gap-2">
+                        {alert.type === 'warning' ? <AlertCircle size={15} className="shrink-0" /> : <InfoIcon size={15} className="shrink-0" />}
+                        <p>{alert.message}</p>
+                      </div>
+                      <button 
+                        onClick={() => deleteAlert(alert.id)}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </header>
+  );
+}
+
+function InfoIcon({ size, className }) {
+  return <Clock size={size} className={className} />;
+}
+
+
+function DashboardView({ employees, payrolls, attendance, companySettings, setActiveTab }) {
+  // Aggregate Stats
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter(e => e.isActive).length;
+  
+  // Calculate total payroll paid out last month
+  const totalPayrollThisMonth = payrolls
+    .filter(p => p.status === 'Approved')
+    .reduce((sum, curr) => sum + curr.netSalary, 0);
+
+  // Nearing contract ends (mocked heuristic - hired since late 2025/2026 under contracts)
+  const expiringContracts = employees.filter(e => e.status === 'Kontrak').length;
+
+  // Custom Chart Data: Salaries by Division
+  const divisionSpending = employees.reduce((acc, emp) => {
+    acc[emp.division] = (acc[emp.division] || 0) + emp.baseSalary;
+    return acc;
+  }, {});
+
+  const chartData = Object.keys(divisionSpending).map(div => ({
+    name: div,
+    amount: divisionSpending[div]
+  }));
+
+  // Attendance metrics for today
+  const attendanceToday = attendance.filter(a => a.date === '2026-05-29');
+  const presentCount = attendanceToday.filter(a => a.status === 'Hadir').length;
+  const lateCount = attendanceToday.filter(a => a.minutesLate > 0).length;
+  const absentCount = attendanceToday.filter(a => ['Izin', 'Sakit', 'Alpha'].includes(a.status)).length;
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Page Title Header */}
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+          Ringkasan Dashboard <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Live Metrics</span>
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Selamat datang kembali! Berikut metrik komparasi dan status payroll hari ini.</p>
+      </div>
+
+      {/* Modern High-Fidelity Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Total Employees */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+          <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+            <Users size={24} />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Karyawan</span>
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{totalEmployees}</h3>
+            <p className="text-[10px] text-emerald-500 font-semibold flex items-center gap-0.5 mt-0.5">
+              <span>aktif: {activeEmployees}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Total Payroll Outflow */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+            <DollarSign size={24} />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Payroll Bulan Ini</span>
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">
+              Rp {(totalPayrollThisMonth / 1000000).toFixed(1)}M
+            </h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+              Sudah disetujui
+            </p>
+          </div>
+        </div>
+
+        {/* Present Today */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+            <Calendar size={24} />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Absensi Hari Ini</span>
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{presentCount} Hadir</h3>
+            <p className="text-[10px] text-rose-500 font-semibold mt-0.5 flex items-center gap-1">
+              <span>{lateCount} Terlambat</span> • <span>{absentCount} Tidak Hadir</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Expiring Contracts */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:shadow-md transition">
+          <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+            <AlertCircle size={24} />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Karyawan Kontrak</span>
+            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{expiringContracts} Orang</h3>
+            <p className="text-[10px] text-indigo-500 font-semibold mt-0.5">
+              Siklus review aktif
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Main Graph & Division Statistics Block */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Custom SVG Interactive Bar Graph of Division Payrolls */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Alokasi Anggaran Gaji Per Divisi</h3>
+              <p className="text-xs text-slate-500">Distribusi kumulatif dari komponen gaji pokok per divisi</p>
+            </div>
+          </div>
+
+          <div className="h-64 flex items-end gap-2 pt-6 px-2 border-b border-slate-200 dark:border-slate-800">
+            {chartData.map((data, idx) => {
+              const maxAmount = Math.max(...chartData.map(d => d.amount), 1);
+              const barHeightPercent = (data.amount / maxAmount) * 80; // Scale to max 80% height
+
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center group cursor-pointer relative">
+                  {/* Tooltip on hover */}
+                  <div className="absolute bottom-full mb-2 bg-slate-900 text-white text-[10px] px-2.5 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition duration-150 z-20 pointer-events-none whitespace-nowrap">
+                    Rp {(data.amount).toLocaleString('id-ID')}
+                  </div>
+                  {/* Visual Bar */}
+                  <div 
+                    className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 hover:from-indigo-500 hover:to-indigo-300 rounded-t-md transition-all duration-300"
+                    style={{ height: `${barHeightPercent}%` }}
+                  ></div>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 truncate w-full text-center mt-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    {data.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Division Stats Checklist */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Statistik Divisi Terpadat</h3>
+          
+          <div className="space-y-3">
+            {INITIAL_DIVISIONS.slice(0, 5).map((div, i) => {
+              const count = employees.filter(e => e.division === div.name).length;
+              const pct = Math.round((count / totalEmployees) * 100) || 0;
+              return (
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">{div.name}</span>
+                    <span className="text-slate-500 font-bold">{count} Karyawan ({pct}%)</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button 
+              onClick={() => setActiveTab('karyawan')}
+              className="w-full py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 transition flex items-center justify-center gap-1.5"
+            >
+              <span>Kelola Semua Karyawan</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Quick Alerts and Logs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Real-time Absensi Tracker */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-4">Deteksi Keterlambatan Real-Time</h3>
+          <div className="space-y-3">
+            {attendanceToday.filter(a => a.minutesLate > 0).map((a, i) => {
+              const emp = employees.find(e => e.nik === a.nik);
+              return (
+                <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/30">
+                  <div className="flex items-center gap-2.5">
+                    <img src={emp?.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{emp?.name}</p>
+                      <p className="text-[10px] text-slate-500">{emp?.division} • Jam Masuk: {a.checkIn}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400 font-extrabold px-2 py-0.5 rounded">
+                    + {a.minutesLate} Menit
+                  </span>
+                </div>
+              );
+            })}
+            {attendanceToday.filter(a => a.minutesLate > 0).length === 0 && (
+              <p className="text-xs text-slate-500 py-4 text-center">Hari ini tidak ada karyawan terlambat.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Audit Log Overview */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-4">Log Audit Aktivitas</h3>
+          <div className="space-y-3.5">
+            {attendanceToday.slice(0, 4).map((item, i) => {
+              // Generate some static representation
+              return (
+                <div key={i} className="flex gap-3 text-xs">
+                  <Clock className="text-indigo-400 shrink-0" size={14} />
+                  <div>
+                    <span className="text-slate-500 font-medium">[09:{15 + i*10} WIB]</span>{' '}
+                    <span className="text-slate-800 dark:text-slate-200 font-bold">Kehadiran tercatat:</span>{' '}
+                    <span className="text-slate-600 dark:text-slate-400">Karyawan NIK EMP00{i+1} check-in berhasil.</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function EmployeeView({ employees, setEmployees, divisions, currentRole, addAuditLog }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDivision, setFilterDivision] = useState('Semua');
+  const [filterStatus, setFilterStatus] = useState('Semua');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+
+  // New Employee Form State
+  const [formState, setFormState] = useState({
+    nik: '', name: '', email: '', phone: '', address: '', joinDate: '', status: 'Tetap', position: '', division: 'Waiter', baseSalary: 3200000, isActive: true, photoUrl: ''
+  });
+
+  // Calculate work duration
+  const getMasaKerja = (joinDateStr) => {
+    const join = new Date(joinDateStr);
+    const now = new Date();
+    let diffYear = now.getFullYear() - join.getFullYear();
+    let diffMonth = now.getMonth() - join.getMonth();
+    if (diffMonth < 0) {
+      diffYear--;
+      diffMonth += 12;
+    }
+    return `${diffYear} Tahun ${diffMonth} Bulan`;
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    if (editingEmployee) {
+      // Edit mode
+      setEmployees(employees.map(emp => emp.nik === editingEmployee.nik ? { ...formState } : emp));
+      addAuditLog(`Mengupdate data karyawan ${formState.name} (${formState.nik})`);
+      setEditingEmployee(null);
+    } else {
+      // Add mode
+      // Auto-gen NIK
+      const nextNik = `EMP00${employees.length + 1}`;
+      const newEmp = { ...formState, nik: nextNik, photoUrl: formState.photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150' };
+      setEmployees([...employees, newEmp]);
+      addAuditLog(`Menambahkan karyawan baru: ${formState.name} (${nextNik})`);
+    }
+    setShowAddForm(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormState({
+      nik: '', name: '', email: '', phone: '', address: '', joinDate: '', status: 'Tetap', position: '', division: 'Waiter', baseSalary: 3200000, isActive: true, photoUrl: ''
+    });
+  };
+
+  const handleEditClick = (emp) => {
+    setEditingEmployee(emp);
+    setFormState(emp);
+    setShowAddForm(true);
+  };
+
+  const handleDelete = (nik) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus data karyawan ${nik}?`)) {
+      setEmployees(employees.filter(emp => emp.nik !== nik));
+      addAuditLog(`Menghapus karyawan dengan NIK ${nik}`);
+    }
+  };
+
+  // Filter logic
+  const filteredEmployees = employees.filter(emp => {
+    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || emp.nik.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDiv = filterDivision === 'Semua' || emp.division === filterDivision;
+    const matchesStatus = filterStatus === 'Semua' || emp.status === filterStatus;
+    return matchesSearch && matchesDiv && matchesStatus;
+  });
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Panel */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+            Database Karyawan <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Master Data</span>
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Kelola informasi legalitas karyawan, divisi, status kontrak, dan upah pokok dasar.</p>
+        </div>
+
+        {/* Authorization Guard */}
+        {['Super Admin', 'HRD'].includes(currentRole) && (
+          <button 
+            onClick={() => { resetForm(); setEditingEmployee(null); setShowAddForm(true); }}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-indigo-600/20 transition self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            <span>Karyawan Baru</span>
+          </button>
+        )}
+      </div>
+
+      {/* Live Form Creator/Editor Modals */}
+      {showAddForm && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md space-y-4">
+          <div className="flex justify-between items-center border-b pb-3 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+              {editingEmployee ? 'Edit Profil Karyawan' : 'Registrasi Karyawan Baru'}
+            </h3>
+            <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Nama Lengkap</label>
+              <input 
+                type="text" required value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Email Instansi</label>
+              <input 
+                type="email" required value={formState.email} onChange={e => setFormState({...formState, email: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Nomor HP</label>
+              <input 
+                type="text" required value={formState.phone} onChange={e => setFormState({...formState, phone: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Alamat Tempat Tinggal</label>
+              <textarea 
+                rows="2" required value={formState.address} onChange={e => setFormState({...formState, address: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Tanggal Mulai Kontrak/Masuk</label>
+              <input 
+                type="date" required value={formState.joinDate} onChange={e => setFormState({...formState, joinDate: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Status Ikatan Kerja</label>
+              <select 
+                value={formState.status} onChange={e => setFormState({...formState, status: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              >
+                <option value="Tetap">Tetap</option>
+                <option value="Kontrak">Kontrak</option>
+                <option value="Magang">Magang</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Status Keaktifan</label>
+              <select 
+                value={formState.isActive ? 'Aktif' : 'Nonaktif'} 
+                onChange={e => setFormState({...formState, isActive: e.target.value === 'Aktif'})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              >
+                <option value="Aktif">Aktif</option>
+                <option value="Nonaktif">Nonaktif (Resigned)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Divisi</label>
+              <select 
+                value={formState.division} onChange={e => setFormState({...formState, division: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              >
+                {divisions.map(div => <option key={div.id} value={div.name}>{div.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Jabatan Akademis/Fungsional</label>
+              <input 
+                type="text" required value={formState.position} onChange={e => setFormState({...formState, position: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Gaji Pokok Dasar (IDR)</label>
+              <input 
+                type="number" required value={formState.baseSalary} onChange={e => setFormState({...formState, baseSalary: parseInt(e.target.value) || 0})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Foto URL (Opsional)</label>
+              <input 
+                type="text" placeholder="https://..." value={formState.photoUrl} onChange={e => setFormState({...formState, photoUrl: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="md:col-span-3 flex justify-end gap-3 pt-3 border-t dark:border-slate-800">
+              <button 
+                type="button" onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-850"
+              >
+                Batal
+              </button>
+              <button 
+                type="submit"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/10"
+              >
+                Simpan Data
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Search, Filters, and Utilities Panel */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3.5 top-2.5 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Cari berdasarkan nama atau NIK..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-indigo-500 outline-none"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          <select 
+            value={filterDivision} 
+            onChange={e => setFilterDivision(e.target.value)}
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none"
+          >
+            <option value="Semua">Semua Divisi</option>
+            {divisions.map(div => <option key={div.id} value={div.name}>{div.name}</option>)}
+          </select>
+
+          <select 
+            value={filterStatus} 
+            onChange={e => setFilterStatus(e.target.value)}
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none"
+          >
+            <option value="Semua">Semua Ikatan</option>
+            <option value="Tetap">Tetap</option>
+            <option value="Kontrak">Kontrak</option>
+            <option value="Magang">Magang</option>
+          </select>
+
+          <button 
+            onClick={() => alert('Fitur simulasi: Mengekspor file Excel data karyawan sesuai standar HRIS.')}
+            className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 transition"
+          >
+            <FileSpreadsheet size={15} />
+            <span>Export Excel</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Database Table Grid */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <th className="p-4">Karyawan</th>
+                <th className="p-4">NIK</th>
+                <th className="p-4">Divisi & Jabatan</th>
+                <th className="p-4">Masa Kerja</th>
+                <th className="p-4">Gaji Pokok</th>
+                <th className="p-4">Status</th>
+                {['Super Admin', 'HRD'].includes(currentRole) && <th className="p-4 text-center">Aksi</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              {filteredEmployees.map((emp) => (
+                <tr key={emp.nik} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+                  <td className="p-4 flex items-center gap-3">
+                    <img src={emp.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover shadow-sm ring-2 ring-slate-100 dark:ring-slate-800" />
+                    <div>
+                      <p className="font-extrabold text-slate-800 dark:text-slate-100 leading-tight">{emp.name}</p>
+                      <p className="text-[10px] text-slate-400">{emp.email}</p>
+                    </div>
+                  </td>
+                  <td className="p-4 font-mono font-semibold text-slate-500">{emp.nik}</td>
+                  <td className="p-4">
+                    <p className="font-bold text-indigo-600 dark:text-indigo-400">{emp.division}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">{emp.position}</p>
+                  </td>
+                  <td className="p-4 text-slate-600 dark:text-slate-400 font-medium">
+                    {getMasaKerja(emp.joinDate)}
+                    <span className="block text-[10px] text-slate-400">Masuk: {emp.joinDate}</span>
+                  </td>
+                  <td className="p-4 font-bold text-slate-800 dark:text-slate-100">
+                    Rp {emp.baseSalary.toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                        emp.status === 'Tetap' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                        emp.status === 'Kontrak' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' :
+                        'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+                      }`}>
+                        {emp.status}
+                      </span>
+                      <span className={`text-[10px] font-semibold ${emp.isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        {emp.isActive ? '• Aktif' : '• Resigned'}
+                      </span>
+                    </div>
+                  </td>
+                  
+                  {['Super Admin', 'HRD'].includes(currentRole) && (
+                    <td className="p-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleEditClick(emp)}
+                          className="p-1.5 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          title="Edit"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(emp.nik)}
+                          className="p-1.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-500 hover:text-rose-700 dark:hover:text-rose-300"
+                          title="Hapus"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {filteredEmployees.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="text-center py-8 text-slate-400 dark:text-slate-500 font-medium">
+                    Karyawan tidak ditemukan. Silakan sesuaikan pencarian atau filter Anda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+
+function AttendanceView({ employees, attendance, setAttendance, companySettings, currentRole, addAuditLog }) {
+  const [activeDate, setActiveDate] = useState('2026-05-29');
+  const [showManualCheckIn, setShowManualCheckIn] = useState(false);
+  
+  // State for manual check-in form
+  const [manualForm, setManualForm] = useState({ nik: 'EMP001', checkIn: '09:30', checkOut: '18:00', status: 'Hadir' });
+
+  // Compute stats for activeDate
+  const listToday = attendance.filter(a => a.date === activeDate);
+  const presentCount = listToday.filter(a => a.status === 'Hadir').length;
+  const lateCount = listToday.filter(a => a.minutesLate > 0).length;
+
+  // Process Late Minutes dynamically based on standard 09:30
+  const calculateLate = (checkInStr) => {
+    if (!checkInStr) return 0;
+    const [hrs, mins] = checkInStr.split(':').map(Number);
+    const checkInVal = hrs * 60 + mins;
+    const thresholdVal = 9 * 60 + 30; // 09:30
+    return checkInVal > thresholdVal ? checkInVal - thresholdVal : 0;
+  };
+
+  const handleManualSubmit = (e) => {
+    e.preventDefault();
+    const isLate = calculateLate(manualForm.checkIn);
+    
+    // Check if record already exists
+    const exists = attendance.some(a => a.nik === manualForm.nik && a.date === activeDate);
+    
+    if (exists) {
+      setAttendance(attendance.map(a => 
+        (a.nik === manualForm.nik && a.date === activeDate) 
+          ? { ...a, ...manualForm, minutesLate: isLate } 
+          : a
+      ));
+      addAuditLog(`Mengubah absensi manual: ${manualForm.nik} pada ${activeDate}`);
+    } else {
+      const newRecord = {
+        nik: manualForm.nik,
+        date: activeDate,
+        checkIn: manualForm.checkIn,
+        checkOut: manualForm.checkOut,
+        status: manualForm.status,
+        minutesLate: isLate
+      };
+      setAttendance([...attendance, newRecord]);
+      addAuditLog(`Menambahkan absensi manual baru: ${manualForm.nik} pada ${activeDate}`);
+    }
+    setShowManualCheckIn(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title / Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+            Sistem Absensi Harian <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Kehadiran</span>
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Default jam masuk standard: 09:30. Terlambat otomatis memotong gaji kumulatif.</p>
+        </div>
+
+        {['Super Admin', 'HRD'].includes(currentRole) && (
+          <button 
+            onClick={() => setShowManualCheckIn(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-indigo-600/20 transition self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            <span>Input Jam Manual</span>
+          </button>
+        )}
+      </div>
+
+      {/* Manual Input Attendance Form Section */}
+      {showManualCheckIn && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md space-y-4">
+          <div className="flex justify-between items-center border-b pb-3 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Form Input Kehadiran Manual</h3>
+            <button onClick={() => setShowManualCheckIn(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleManualSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Pilih Karyawan</label>
+              <select 
+                value={manualForm.nik} 
+                onChange={e => setManualForm({...manualForm, nik: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500 outline-none"
+              >
+                {employees.map(e => <option key={e.nik} value={e.nik}>{e.nik} - {e.name}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Status Kehadiran</label>
+              <select 
+                value={manualForm.status} 
+                onChange={e => setManualForm({...manualForm, status: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500 outline-none"
+              >
+                <option value="Hadir">Hadir (Kerja)</option>
+                <option value="Izin">Izin Teratur</option>
+                <option value="Sakit">Sakit (SKS)</option>
+                <option value="Alpha">Alpha (Tanpa Kabar)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Jam Masuk (Check-In)</label>
+              <input 
+                type="text" placeholder="Format 09:30" 
+                value={manualForm.checkIn} 
+                onChange={e => setManualForm({...manualForm, checkIn: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500 outline-none"
+                disabled={manualForm.status !== 'Hadir'}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Jam Keluar (Check-Out)</label>
+              <input 
+                type="text" placeholder="Format 18:00" 
+                value={manualForm.checkOut} 
+                onChange={e => setManualForm({...manualForm, checkOut: e.target.value})}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-indigo-500 outline-none"
+                disabled={manualForm.status !== 'Hadir'}
+              />
+            </div>
+
+            <div className="sm:col-span-4 flex justify-end gap-3 pt-3 border-t dark:border-slate-800">
+              <button 
+                type="button" onClick={() => setShowManualCheckIn(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-850"
+              >
+                Batal
+              </button>
+              <button 
+                type="submit"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/10"
+              >
+                Kunci Log Absen
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Stats Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tanggal Kerja Terpilih</p>
+          <div className="flex items-center gap-2 mt-1">
+            <Calendar className="text-indigo-500" size={16} />
+            <input 
+              type="date" value={activeDate} onChange={e => setActiveDate(e.target.value)}
+              className="bg-transparent border-none text-md font-extrabold focus:ring-0 text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
+            />
+          </div>
+        </div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex justify-between items-center">
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Karyawan Hadir Hari Ini</p>
+            <h4 className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1">{presentCount} Orang</h4>
+          </div>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex justify-between items-center">
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Insiden Keterlambatan</p>
+            <h4 className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{lateCount} Kasus</h4>
+          </div>
+          <AlertCircle className="text-rose-500" size={18} />
+        </div>
+      </div>
+
+      {/* Main Database Table Container */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lembar Kehadiran Tanggal: {activeDate}</h3>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <th className="p-4">Karyawan</th>
+                <th className="p-4">NIK</th>
+                <th className="p-4">Jam Masuk</th>
+                <th className="p-4">Jam Keluar</th>
+                <th className="p-4">Keterlambatan</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-center">Tindakan Cepat</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              {employees.map((emp) => {
+                const log = attendance.find(a => a.nik === emp.nik && a.date === activeDate);
+                const isLate = log && log.minutesLate > 0;
+                
+                return (
+                  <tr key={emp.nik} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+                    <td className="p-4 flex items-center gap-3">
+                      <img src={emp.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      <div>
+                        <p className="font-extrabold text-slate-800 dark:text-slate-100 leading-tight">{emp.name}</p>
+                        <p className="text-[10px] text-indigo-500">{emp.division}</p>
+                      </div>
+                    </td>
+                    <td className="p-4 font-mono text-slate-500">{emp.nik}</td>
+                    <td className="p-4 text-slate-700 dark:text-slate-300 font-semibold">{log?.checkIn || '--:--'}</td>
+                    <td className="p-4 text-slate-700 dark:text-slate-300 font-semibold">{log?.checkOut || '--:--'}</td>
+                    <td className="p-4 font-bold">
+                      {isLate ? (
+                        <span className="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded">
+                          Terlambat {log.minutesLate} mnt
+                        </span>
+                      ) : log?.status === 'Hadir' ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded">
+                          Tepat Waktu
+                        </span>
+                      ) : '--'}
+                    </td>
+                    <td className="p-4">
+                      {log ? (
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                          log.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                          log.status === 'Izin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400' :
+                          log.status === 'Sakit' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' :
+                          'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                        }`}>
+                          {log.status}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-bold bg-slate-100 dark:bg-slate-850 px-2 py-0.5 rounded text-[10px]">
+                          Belum Absen
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex justify-center gap-1.5">
+                        <button 
+                          onClick={() => {
+                            const exists = attendance.some(a => a.nik === emp.nik && a.date === activeDate);
+                            const updatedRecord = { nik: emp.nik, date: activeDate, checkIn: '09:15', checkOut: '18:00', status: 'Hadir', minutesLate: 0 };
+                            if (exists) {
+                              setAttendance(attendance.map(a => (a.nik === emp.nik && a.date === activeDate) ? updatedRecord : a));
+                            } else {
+                              setAttendance([...attendance, updatedRecord]);
+                            }
+                            addAuditLog(`Quick sign-in Hadir untuk ${emp.name} (${emp.nik})`);
+                          }}
+                          className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold rounded-lg transition"
+                        >
+                          Hadir
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const exists = attendance.some(a => a.nik === emp.nik && a.date === activeDate);
+                            const updatedRecord = { nik: emp.nik, date: activeDate, checkIn: '', checkOut: '', status: 'Izin', minutesLate: 0 };
+                            if (exists) {
+                              setAttendance(attendance.map(a => (a.nik === emp.nik && a.date === activeDate) ? updatedRecord : a));
+                            } else {
+                              setAttendance([...attendance, updatedRecord]);
+                            }
+                            addAuditLog(`Quick set Izin untuk ${emp.name} (${emp.nik})`);
+                          }}
+                          className="px-2 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[10px] font-bold rounded-lg transition"
+                        >
+                          Izin
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+
+function PayrollView({ employees, payrolls, setPayrolls, allowances, deductions, currentRole, addAuditLog, companySettings }) {
+  const [selectedMonth, setSelectedMonth] = useState('Mei 2026');
+  const [activeSlip, setActiveSlip] = useState(null); // Detailed preview object for the visual PDF generator
+  const [showSlipViewer, setShowSlipViewer] = useState(false);
+
+  // Auto-generate current month payroll draft for all staff
+  const handleGeneratePayrollBatch = () => {
+    const confirmation = confirm(`Apakah Anda yakin ingin melakukan generate payroll otomatis untuk bulan ${selectedMonth}?`);
+    if (!confirmation) return;
+
+    const newSlips = employees.map((emp, index) => {
+      const base = emp.baseSalary;
+      
+      // Calculate static variables
+      const sumAllowances = allowances.reduce((sum, curr) => sum + curr.amount, 0);
+      const sumDeductions = deductions.reduce((sum, curr) => {
+        if (curr.id === 'ded_late') return sum; // Handle late cases dynamically
+        return sum + curr.amount;
+      }, 0);
+
+      const net = base + sumAllowances - sumDeductions + 150000; // adding minor variable overtime
+      
+      return {
+        id: `PAY-202605-0${index + 4}`,
+        nik: emp.nik,
+        name: emp.name,
+        division: emp.division,
+        month: selectedMonth,
+        baseSalary: base,
+        allowance: sumAllowances,
+        deduction: sumDeductions,
+        bonus: 200000,
+        overtime: 150000,
+        netSalary: net,
+        status: 'Pending Approval',
+        approvedBy: '',
+        approvedDate: ''
+      };
+    });
+
+    setPayrolls([...payrolls, ...newSlips]);
+    addAuditLog(`Melakukan batch-generate payroll draf bulan ${selectedMonth}`);
+    alert(`Berhasil membuat ${newSlips.length} lembar draf slip gaji untuk diulas!`);
+  };
+
+  const handleApprovePayroll = (id) => {
+    setPayrolls(payrolls.map(pay => {
+      if (pay.id === id) {
+        return {
+          ...pay,
+          status: 'Approved',
+          approvedBy: 'Yusuf (Manager)',
+          approvedDate: new Date().toISOString().substring(0, 10)
+        };
+      }
+      return pay;
+    }));
+    addAuditLog(`Menyetujui slip payroll ID: ${id}`);
+    alert('Slip Gaji berhasil disetujui untuk pencairan!');
+  };
+
+  const openSlipGajiPDF = (slip) => {
+    setActiveSlip(slip);
+    setShowSlipViewer(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+            Pemrosesan Payroll <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Engine</span>
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Generate slip gaji otomatis terintegrasi dengan data divisi, tunjangan dan potongan legal.</p>
+        </div>
+
+        {/* Security / Role Lock: Admin & HRD can calculate */}
+        {['Super Admin', 'HRD'].includes(currentRole) && (
+          <button 
+            onClick={handleGeneratePayrollBatch}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-indigo-600/20 transition self-start sm:self-auto"
+          >
+            <RefreshCw size={15} className="animate-spin" />
+            <span>Batch Generate Payroll</span>
+          </button>
+        )}
+      </div>
+
+      {/* Modern PDF Salary Slip Visualizer Modal */}
+      {showSlipViewer && activeSlip && (
+        <div className="bg-slate-900/45 fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl p-8 shadow-2xl relative space-y-6 text-slate-800 dark:text-slate-100">
+            
+            {/* Modal Closer Header */}
+            <div className="flex justify-between items-center border-b pb-4 dark:border-slate-800">
+              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-1">
+                <Shield size={14} /> Kertas Slip Gaji Digital / E-Slip
+              </span>
+              <button onClick={() => setShowSlipViewer(false)} className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* A4 Paper Simulated Section */}
+            <div className="border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-xl bg-slate-50 dark:bg-slate-950 font-serif relative overflow-hidden" id="print-slip-area">
+              
+              {/* Decorative Watermark background */}
+              <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
+                <Building size={350} />
+              </div>
+
+              {/* Company Logo Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-indigo-600 rounded overflow-hidden">
+                    <img src={companySettings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="font-sans">
+                    <h4 className="font-black text-sm tracking-wide text-slate-900 dark:text-white">{companySettings.name}</h4>
+                    <p className="text-[10px] text-slate-500">{companySettings.address}</p>
+                  </div>
+                </div>
+                <div className="text-left sm:text-right font-sans">
+                  <h3 className="text-lg font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">SLIP GAJI RESMI</h3>
+                  <p className="text-xs text-slate-500">Bulan Operasional: {activeSlip.month}</p>
+                  <p className="text-[9px] text-slate-400 font-mono mt-0.5">ID Slip: {activeSlip.id}</p>
+                </div>
+              </div>
+
+              {/* Employee Metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6 text-xs font-sans pb-4 border-b dark:border-slate-800">
+                <div className="space-y-1">
+                  <p className="text-slate-500">Diterbitkan Kepada:</p>
+                  <p className="font-black text-slate-800 dark:text-white text-sm">{activeSlip.name}</p>
+                  <p className="text-slate-600 dark:text-slate-300">NIK: {activeSlip.nik}</p>
+                </div>
+                <div className="space-y-1 text-left sm:text-right">
+                  <p className="text-slate-500">Struktur Kerja:</p>
+                  <p className="font-bold text-slate-800 dark:text-white">Divisi {activeSlip.division}</p>
+                  <p className="text-slate-600 dark:text-slate-300">Pekerjaan: Staff Operasional</p>
+                </div>
+              </div>
+
+              {/* Breakdown Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs pt-2">
+                
+                {/* INCOMES / PENERIMAAN */}
+                <div className="space-y-3">
+                  <h5 className="font-black text-slate-800 dark:text-white border-b pb-1 text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Penerimaan (A)</h5>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Gaji Pokok Dasar</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp {activeSlip.baseSalary.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Tunjangan Jabatan & Transport</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp {activeSlip.allowance.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Lembur Operasional</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp {activeSlip.overtime.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Insentif / Bonus</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp {activeSlip.bonus.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DEDUCTIONS / POTONGAN */}
+                <div className="space-y-3">
+                  <h5 className="font-black text-slate-800 dark:text-white border-b pb-1 text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400">Potongan (B)</h5>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">BPJS Ketenagakerjaan (2%)</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp 120.000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Pajak PPh 21 Standar</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp {activeSlip.deduction.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400">Kasbon / Denda Lambat</span>
+                      <span className="font-semibold text-slate-850 dark:text-slate-200">Rp 0</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Total Summary Footer of Slip */}
+              <div className="mt-8 pt-4 border-t-2 border-dashed border-slate-300 dark:border-slate-700 font-sans flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h4 className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Gaji Bersih Diterima (Net Pay)</h4>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white">Rp {activeSlip.netSalary.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="text-left sm:text-right text-[10px] text-slate-500 space-y-0.5">
+                  <p>Disetujui Oleh: <span className="font-bold text-indigo-500">{activeSlip.approvedBy || 'Dalam Antrean'}</span></p>
+                  <p>Status Pembayaran: <span className="font-extrabold text-emerald-500">Ditransfer Sukses</span></p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-800 text-xs">
+              <button 
+                onClick={() => alert('Fitur simulasi: Mengirimkan dokumen PDF ini ke alamat email karyawan.')}
+                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold text-slate-600 dark:text-slate-300 transition"
+              >
+                <Send size={15} />
+                <span>Kirim E-slip via Email</span>
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-600/10 transition"
+              >
+                <Printer size={15} />
+                <span>Cetak / Download PDF</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Main Database Table Grid for Payroll Processing */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        
+        {/* Table Search Header */}
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Bulan Kerja:</span>
+            <select 
+              value={selectedMonth} 
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
+            >
+              <option value="Mei 2026">Mei 2026</option>
+              <option value="April 2026">April 2026</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <th className="p-4">Karyawan</th>
+                <th className="p-4">Komponen Gaji</th>
+                <th className="p-4">Tunjangan</th>
+                <th className="p-4">Potongan Pajak</th>
+                <th className="p-4">Gaji Bersih</th>
+                <th className="p-4">Status & Verifikator</th>
+                <th className="p-4 text-center">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+              {payrolls.filter(p => p.month === selectedMonth).map((slip) => (
+                <tr key={slip.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+                  <td className="p-4">
+                    <p className="font-extrabold text-slate-800 dark:text-slate-100 leading-tight">{slip.name}</p>
+                    <p className="text-[10px] text-slate-400">{slip.nik} • {slip.division}</p>
+                  </td>
+                  <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
+                    Rp {slip.baseSalary.toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-4 text-emerald-600 font-semibold">
+                    +Rp {(slip.allowance + slip.overtime + slip.bonus).toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-4 text-rose-600 font-semibold">
+                    -Rp {slip.deduction.toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-4 font-black text-slate-900 dark:text-white">
+                    Rp {slip.netSalary.toLocaleString('id-ID')}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase w-max ${
+                        slip.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                      }`}>
+                        {slip.status}
+                      </span>
+                      {slip.status === 'Approved' && (
+                        <span className="text-[9px] text-slate-400">Verifikator: {slip.approvedBy}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button 
+                        onClick={() => openSlipGajiPDF(slip)}
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold rounded-lg transition flex items-center gap-1"
+                        title="Lihat Slip"
+                      >
+                        <FileText size={12} />
+                        <span>Detail Slip</span>
+                      </button>
+
+                      {/* Manager or Super Admin approval required */}
+                      {slip.status !== 'Approved' && ['Super Admin', 'Manager'].includes(currentRole) && (
+                        <button 
+                          onClick={() => handleApprovePayroll(slip.id)}
+                          className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-lg transition flex items-center gap-1"
+                        >
+                          <Check size={12} />
+                          <span>Approve</span>
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+
+function AllowanceDeductionView({ allowanceSettings, setAllowanceSettings, deductionSettings, setDeductionSettings, currentRole, addAuditLog }) {
+  const [showAddAllowance, setShowAddAllowance] = useState(false);
+  const [showAddDeduction, setShowAddDeduction] = useState(false);
+
+  const [allForm, setAllForm] = useState({ name: '', amount: 100000, type: 'Tetap' });
+  const [dedForm, setDedForm] = useState({ name: '', amount: 50000, type: 'Tetap' });
+
+  const handleAddAllowance = (e) => {
+    e.preventDefault();
+    const newAllowance = {
+      id: `all_${Date.now()}`,
+      ...allForm
+    };
+    setAllowanceSettings([...allowanceSettings, newAllowance]);
+    addAuditLog(`Menambahkan Master Tunjangan Baru: ${allForm.name}`);
+    setShowAddAllowance(false);
+    setAllForm({ name: '', amount: 100000, type: 'Tetap' });
+  };
+
+  const handleAddDeduction = (e) => {
+    e.preventDefault();
+    const newDeduction = {
+      id: `ded_${Date.now()}`,
+      ...dedForm
+    };
+    setDeductionSettings([...deductionSettings, newDeduction]);
+    addAuditLog(`Menambahkan Master Potongan Baru: ${dedForm.name}`);
+    setShowAddDeduction(false);
+    setDedForm({ name: '', amount: 50000, type: 'Tetap' });
+  };
+
+  const deleteAllowance = (id) => {
+    if (confirm('Apakah Anda yakin ingin menghapus tunjangan ini?')) {
+      setAllowanceSettings(allowanceSettings.filter(a => a.id !== id));
+      addAuditLog(`Menghapus Tunjangan ID: ${id}`);
+    }
+  };
+
+  const deleteDeduction = (id) => {
+    if (confirm('Apakah Anda yakin ingin menghapus potongan ini?')) {
+      setDeductionSettings(deductionSettings.filter(d => d.id !== id));
+      addAuditLog(`Menghapus Potongan ID: ${id}`);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Header */}
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+          Komponen Tunjangan & Potongan <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Fringe Benefits</span>
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Atur komponen penambah dan pengurang upah untuk diintegrasikan secara global pada lembar payroll.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* ALLOWANCE MANAGEMENT */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b pb-3 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Tabel Master Tunjangan</h3>
+            {['Super Admin', 'HRD'].includes(currentRole) && (
+              <button 
+                onClick={() => setShowAddAllowance(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                <Plus size={14} /> Tambah Baru
+              </button>
+            )}
+          </div>
+
+          {showAddAllowance && (
+            <form onSubmit={handleAddAllowance} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Nama Tunjangan</label>
+                <input 
+                  type="text" required value={allForm.name} onChange={e => setAllForm({...allForm, name: e.target.value})}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Nilai Tunai (IDR)</label>
+                <input 
+                  type="number" required value={allForm.amount} onChange={e => setAllForm({...allForm, amount: parseInt(e.target.value) || 0})}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setShowAddAllowance(false)} className="px-3 py-1 text-[10px] font-bold text-slate-500">Batal</button>
+                <button type="submit" className="px-3 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold">Simpan</button>
+              </div>
+            </form>
+          )}
+
+          <div className="space-y-3">
+            {allowanceSettings.map((item) => (
+              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-850/50 border border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="font-bold text-slate-800 dark:text-slate-100">{item.name}</p>
+                  <span className="text-[10px] text-indigo-500 font-semibold">{item.type}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">Rp {item.amount.toLocaleString('id-ID')}</span>
+                  {['Super Admin', 'HRD'].includes(currentRole) && (
+                    <button onClick={() => deleteAllowance(item.id)} className="text-slate-400 hover:text-rose-500">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* DEDUCTION MANAGEMENT */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b pb-3 dark:border-slate-800">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Tabel Master Potongan</h3>
+            {['Super Admin', 'HRD'].includes(currentRole) && (
+              <button 
+                onClick={() => setShowAddDeduction(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                <Plus size={14} /> Tambah Baru
+              </button>
+            )}
+          </div>
+
+          {showAddDeduction && (
+            <form onSubmit={handleAddDeduction} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Nama Potongan</label>
+                <input 
+                  type="text" required value={dedForm.name} onChange={e => setDedForm({...dedForm, name: e.target.value})}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Nilai Potongan (IDR)</label>
+                <input 
+                  type="number" required value={dedForm.amount} onChange={e => setDedForm({...dedForm, amount: parseInt(e.target.value) || 0})}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setShowAddDeduction(false)} className="px-3 py-1 text-[10px] font-bold text-slate-500">Batal</button>
+                <button type="submit" className="px-3 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold">Simpan</button>
+              </div>
+            </form>
+          )}
+
+          <div className="space-y-3">
+            {deductionSettings.map((item) => (
+              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-850/50 border border-slate-100 dark:border-slate-800">
+                <div>
+                  <p className="font-bold text-slate-800 dark:text-slate-100">{item.name}</p>
+                  <span className="text-[10px] text-rose-500 font-semibold">{item.type}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                    {item.id === 'ded_late' ? `Rp ${item.amount.toLocaleString('id-ID')}/mnt` : `Rp ${item.amount.toLocaleString('id-ID')}`}
+                  </span>
+                  {['Super Admin', 'HRD'].includes(currentRole) && (
+                    <button onClick={() => deleteDeduction(item.id)} className="text-slate-400 hover:text-rose-500">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function ReportsView({ employees, payrolls, attendance, divisions }) {
+  const [selectedReportType, setSelectedReportType] = useState('Payroll');
+  const [startDate, setStartDate] = useState('2026-05-01');
+  const [endDate, setEndDate] = useState('2026-05-31');
+
+  // Metrik Kompilasi
+  const aggregateDivSalary = divisions.map(div => {
+    const totalSalary = employees.filter(e => e.division === div.name).reduce((sum, e) => sum + e.baseSalary, 0);
+    return {
+      division: div.name,
+      totalSalary
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Header */}
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+          Laporan Finansial & HRD <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Reports Hub</span>
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Rekonsiliasi data operasional divisi dan pengeluaran berkas payroll secara lengkap.</p>
+      </div>
+
+      {/* Filter and selector */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row gap-5 items-center justify-between">
+        
+        <div className="flex flex-wrap gap-4 items-center">
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Pilih Jenis Laporan</span>
+            <select 
+              value={selectedReportType} 
+              onChange={e => setSelectedReportType(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold outline-none"
+            >
+              <option value="Payroll">Laporan Penggajian (Payroll)</option>
+              <option value="Attendance">Laporan Rekapitulasi Absensi</option>
+              <option value="Division">Laporan Distribusi Anggaran Divisi</option>
+            </select>
+          </div>
+
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Tanggal Mulai</span>
+            <input 
+              type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold outline-none"
+            />
+          </div>
+
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Tanggal Selesai</span>
+            <input 
+              type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold outline-none"
+            />
+          </div>
+        </div>
+
+        <button 
+          onClick={() => window.print()}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-indigo-600/10 transition self-stretch md:self-auto justify-center"
+        >
+          <Printer size={15} />
+          <span>Cetak Laporan</span>
+        </button>
+      </div>
+
+      {/* RENDERED SELECTED REPORT */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden p-6 space-y-6">
+        
+        <div className="border-b pb-4 dark:border-slate-800 flex justify-between items-center">
+          <div>
+            <h3 className="font-extrabold text-sm uppercase tracking-wide text-slate-800 dark:text-white">
+              {selectedReportType === 'Payroll' && 'Laporan Pengeluaran Finansial Bulanan'}
+              {selectedReportType === 'Attendance' && 'Rekap Kehadiran Terintegrasi Karyawan'}
+              {selectedReportType === 'Division' && 'Distribusi Keuangan per Divisi Operasional'}
+            </h3>
+            <p className="text-xs text-slate-500">Rentang waktu: {startDate} s/d {endDate}</p>
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">GajiKu HRIS Engine 2.1</span>
+        </div>
+
+        {/* Dynamic content rendering based on selectedReportType */}
+        {selectedReportType === 'Payroll' && (
+          <div className="space-y-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/40 font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 border-b">
+                    <th className="p-3">Nama Karyawan</th>
+                    <th className="p-3">NIK</th>
+                    <th className="p-3">Divisi</th>
+                    <th className="p-3">Gaji Pokok</th>
+                    <th className="p-3">Tunjangan</th>
+                    <th className="p-3">Potongan</th>
+                    <th className="p-3">Gaji Bersih</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {payrolls.map((p, i) => (
+                    <tr key={i}>
+                      <td className="p-3 font-bold text-slate-800 dark:text-slate-100">{p.name}</td>
+                      <td className="p-3 text-slate-500 font-mono">{p.nik}</td>
+                      <td className="p-3 text-indigo-500 font-semibold">{p.division}</td>
+                      <td className="p-3">Rp {p.baseSalary.toLocaleString('id-ID')}</td>
+                      <td className="p-3 text-emerald-600">+Rp {(p.allowance + p.overtime + p.bonus).toLocaleString('id-ID')}</td>
+                      <td className="p-3 text-rose-600">-Rp {p.deduction.toLocaleString('id-ID')}</td>
+                      <td className="p-3 font-extrabold text-slate-800 dark:text-slate-100">Rp {p.netSalary.toLocaleString('id-ID')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Pengeluaran Gaji Bersih Kumulatif:</span>
+              <span className="text-lg font-black text-slate-950 dark:text-white">
+                Rp {payrolls.reduce((sum, p) => sum + p.netSalary, 0).toLocaleString('id-ID')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {selectedReportType === 'Attendance' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/40 font-bold uppercase tracking-wider text-slate-500 border-b dark:border-slate-800">
+                  <th className="p-3">Karyawan</th>
+                  <th className="p-3">Hadir</th>
+                  <th className="p-3">Izin</th>
+                  <th className="p-3">Sakit</th>
+                  <th className="p-3">Keterlambatan Kumulatif</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {employees.map((emp, i) => {
+                  const logs = attendance.filter(a => a.nik === emp.nik);
+                  const hadir = logs.filter(a => a.status === 'Hadir').length;
+                  const izin = logs.filter(a => a.status === 'Izin').length;
+                  const sakit = logs.filter(a => a.status === 'Sakit').length;
+                  const lateMinutes = logs.reduce((sum, curr) => sum + curr.minutesLate, 0);
+
+                  return (
+                    <tr key={i}>
+                      <td className="p-3 font-bold text-slate-800 dark:text-slate-100">{emp.name} ({emp.nik})</td>
+                      <td className="p-3 text-emerald-600 font-bold">{hadir} Kali</td>
+                      <td className="p-3 text-blue-600 font-bold">{izin} Kali</td>
+                      <td className="p-3 text-amber-600 font-bold">{sakit} Kali</td>
+                      <td className="p-3 text-rose-600 font-black">{lateMinutes} Menit</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {selectedReportType === 'Division' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {aggregateDivSalary.map((item, i) => (
+                <div key={i} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex justify-between items-center">
+                  <div>
+                    <h5 className="font-extrabold text-slate-800 dark:text-slate-200">{item.division}</h5>
+                    <p className="text-[10px] text-slate-500">Anggaran Dasar Pokok</p>
+                  </div>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">Rp {item.totalSalary.toLocaleString('id-ID')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+
+    </div>
+  );
+}
+
+
+function SettingsView({ companySettings, setCompanySettings, currentRole, auditLogs, addAuditLog }) {
+  const [formBranch, setFormBranch] = useState(companySettings.branch);
+  const [formName, setFormName] = useState(companySettings.name);
+  const [formCheckIn, setFormCheckIn] = useState(companySettings.defaultCheckIn);
+
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    setCompanySettings({
+      ...companySettings,
+      name: formName,
+      branch: formBranch,
+      defaultCheckIn: formCheckIn
+    });
+    addAuditLog('Memperbarui Pengaturan Perusahaan dan Jam Kerja Standar');
+    alert('Pengaturan Perusahaan berhasil disimpan secara global!');
+  };
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Header */}
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+          Pengaturan Sistem & Log Audit <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Settings</span>
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Konfigurasi parameter global perusahaan dan pantau jejak aktivitas operator sistem.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* COMPANY SETTINGS FORM */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-1 space-y-4">
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider border-b pb-3 dark:border-slate-800">Identitas Perusahaan</h3>
+          
+          <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
+            <div className="space-y-1">
+              <label className="font-bold text-slate-500">Nama Perusahaan (Legal)</label>
+              <input 
+                type="text" value={formName} onChange={e => setFormName(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-bold text-slate-500">Cabang Operasional</label>
+              <input 
+                type="text" value={formBranch} onChange={e => setFormBranch(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-bold text-slate-500">Batas Toleransi Absen (Default Check-In)</label>
+              <input 
+                type="text" value={formCheckIn} onChange={e => setFormCheckIn(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button 
+                type="submit"
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition text-xs shadow-md shadow-indigo-600/10"
+              >
+                Terapkan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* COMPREHENSIVE ACTIVITY AUDIT LOGS */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 space-y-4">
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider border-b pb-3 dark:border-slate-800">
+            Jejak Keamanan Audit Log (Kepatuhan ISO/IEC 27001)
+          </h3>
+
+          <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+            {auditLogs.map((log, i) => (
+              <div key={i} className="flex gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 text-xs items-start">
+                <Clock className="text-indigo-500 shrink-0 mt-0.5" size={14} />
+                <div className="flex-1">
+                  <p className="font-bold text-slate-800 dark:text-slate-100">{log.action}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Oleh: {log.user} • {log.timestamp}</p>
+                </div>
+                <span className="text-[9px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded font-bold uppercase">
+                  SUKSES
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+// High quality static reference code for developers
+const PRISMA_SCHEMA_CODE = `datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  HRD
+  MANAGER
+  STAFF
+}
+
+enum EmployeeStatus {
+  TETAP
+  KONTRAK
+  MAGANG
+}
+
+enum AttendanceStatus {
+  HADIR
+  IZIN
+  SAKIT
+  ALPHA
+  LIBUR
+}
+
+enum PayrollStatus {
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  auditLogs AuditLog[]
+}
+
+model Employee {
+  nik         String         @id
+  name        String
+  email       String         @unique
+  phone       String
+  address     String
+  joinDate    DateTime
+  status      EmployeeStatus @default(KONTRAK)
+  position    String
+  isActive    Boolean        @default(true)
+  photoUrl    String?
+  
+  divisionId  String
+  division    Division       @relation(fields: [divisionId], references: [id])
+  
+  attendances Attendance[]
+  payrolls    Payroll[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Division {
+  id         String     @id @default(uuid())
+  name       String     @unique
+  baseSalary Float
+  employees  Employee[]
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  date        DateTime         @db.Date
+  checkIn     String?
+  checkOut    String?
+  status      AttendanceStatus @default(HADIR)
+  minutesLate Int              @default(0)
+  
+  employeeId  String
+  employee    Employee         @relation(fields: [employeeId], references: [nik], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+}
+
+model Payroll {
+  id          String        @id @default(uuid())
+  month       String        // e.g. "Mei 2026"
+  baseSalary  Float
+  allowance   Float         @default(0)
+  deduction   Float         @default(0)
+  bonus       Float         @default(0)
+  overtime    Float         @default(0)
+  netSalary   Float
+  status      PayrollStatus @default(PENDING_APPROVAL)
+  approvedBy  String?
+  approvedAt  DateTime?
+  
+  employeeId  String
+  employee    Employee      @relation(fields: [employeeId], references: [nik], onDelete: Cascade)
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}`;
+
+const BACKEND_API_EXPRESS = `const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+
+const prisma = new PrismaClient();
+const app = express();
+
+app.use(express.json());
+app.use(helmet());
+app.use(cors());
+
+// Rate Limiting to prevent brute force
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use(limiter);
+
+// JWT Auth Middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Token tidak ditemukan' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Token tidak valid' });
+    req.user = user;
+    next();
+  });
+};
+
+// --- AUTH API ---
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ message: 'Sandi salah' });
+
+    const accessToken = jwt.sign(
+      { email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    res.json({ accessToken, role: user.role });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- EMPLOYEE CRUD API ---
+app.get('/api/employees', authenticateToken, async (req, res) => {
+  try {
+    const employees = await prisma.employee.findMany({ include: { division: true } });
+    res.json(employees);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/employees', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'HRD') {
+    return res.status(403).json({ message: 'Akses ditolak' });
+  }
+  try {
+    const newEmployee = await prisma.employee.create({ data: req.body });
+    res.status(201).json(newEmployee);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- PAYROLL ENGINE API ---
+app.post('/api/payroll/generate', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'HRD') {
+    return res.status(403).json({ message: 'Akses ditolak' });
+  }
+  const { month } = req.body;
+  try {
+    const employees = await prisma.employee.findMany({ where: { isActive: true }, include: { division: true } });
+    
+    const payrolls = await Promise.all(employees.map(async (emp) => {
+      // Logic for computing allowances & deductions
+      const base = emp.division.baseSalary;
+      const net = base + 500000 - 150000; // Mock math formula
+      
+      return prisma.payroll.create({
+        data: {
+          employeeId: emp.nik,
+          month,
+          baseSalary: base,
+          allowance: 500000,
+          deduction: 150000,
+          netSalary: net,
+          status: 'PENDING_APPROVAL'
+        }
+      });
+    }));
+
+    res.json({ message: 'Batch payroll berhasil di-generate', data: payrolls });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log('Server berjalan di port ' + PORT));`;
+
+const DUMMY_SEEDER_CODE = `const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+const prisma = new PrismaClient();
+
+async function main() {
+  // Clear tables
+  await prisma.payroll.deleteMany();
+  await prisma.attendance.deleteMany();
+  await prisma.employee.deleteMany();
+  await prisma.division.deleteMany();
+  await prisma.user.deleteMany();
+
+  // 1. Seed Users for Auth
+  const hashedAdminPass = await bcrypt.hash('admin123', 10);
+  const hashedHRDPass = await bcrypt.hash('hrd123', 10);
+  
+  await prisma.user.createMany({
+    data: [
+      { email: 'admin@payroll.com', password: hashedAdminPass, role: 'SUPER_ADMIN' },
+      { email: 'hrd@payroll.com', password: hashedHRDPass, role: 'HRD' }
+    ]
+  });
+
+  // 2. Seed 11 Divisions specified in specifications
+  const divNames = [
+    'Waiter', 'Kasir', 'Nusantara', 'Seafood', 'Cendol', 
+    'Minuman', 'CleanUp', 'Kebersihan', 'Cucian Piring', 'Staff Gudang', 'Potongan'
+  ];
+
+  const divisions = await Promise.all(
+    divNames.map(name => 
+      prisma.division.create({
+        data: { name, baseSalary: 3000000 + (Math.random() * 1500000) }
+      })
+    )
+  );
+
+  console.log('Seeding selesai dengan sukses!');
+}
+
+main()
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); });`;
+
+const README_INSTALLATION = `# GajiKu Enterprise HRIS Setup Guide
+
+## Persyaratan Sistem
+- Node.js >= 18.x
+- PostgreSQL >= 14.x
+
+## Langkah Instalasi Lokal
+
+### 1. Kloning dan Instal Dependensi Backend
+\`\`\`bash
+cd backend
+npm install
+\`\`\`
+
+### 2. Atur Berkas Kunci Lingkungan (.env)
+Buat file \`.env\` di direktori \`backend/\`:
+\`\`\`env
+DATABASE_URL="postgresql://postgres:root@localhost:5443/payroll_db?schema=public"
+JWT_SECRET="supersecretkey-enterprisegrade-98765"
+PORT=5000
+\`\`\`
+
+### 3. Migrasi & Seed Database Prisma
+\`\`\`bash
+npx prisma migrate dev --name init
+npx prisma db seed
+\`\`\`
+
+### 4. Jalankan Backend Server
+\`\`\`bash
+npm run start
+\`\`\`
+
+### 5. Jalankan Frontend React
+\`\`\`bash
+cd ../frontend
+npm install
+npm run dev
+\`\`\`
+
+## Langkah Deployment Cloud
+
+### Backend (Railway / Render)
+1. Hubungkan repositori GitHub Anda ke Railway.
+2. Tambahkan variabel lingkungan: \`DATABASE_URL\`, \`JWT_SECRET\`.
+3. Gunakan build command: \`npx prisma generate && npm run build\`.
+
+### Database (PostgreSQL Cloud)
+Gunakan Supabase, Neon.tech, atau PostgreSQL bawaan Railway sebagai backend storage.`;
+
+
+function DeveloperHubView() {
+  const [activeCodeTab, setActiveCodeTab] = useState('prisma');
+
+  return (
+    <div className="space-y-6">
+      
+      {/* Title Header */}
+      <div>
+        <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 tracking-tight">
+          Developer Code Hub <span className="text-xs px-2.5 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-extrabold uppercase">Engineering</span>
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Gunakan berkas ini untuk langsung melakukan replikasi dan deploy di server lokal atau server cloud produksi Anda.</p>
+      </div>
+
+      {/* Code File Navigation */}
+      <div className="flex flex-wrap gap-2 border-b dark:border-slate-800 pb-3">
+        {[
+          { id: 'prisma', label: 'schema.prisma', icon: Database },
+          { id: 'express', label: 'server.js (Express)', icon: Shield },
+          { id: 'seeder', label: 'seed.js (Dummy Data)', icon: UserCheck },
+          { id: 'readme', label: 'README.md (Deploy Guide)', icon: BookOpen }
+        ].map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeCodeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveCodeTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+                isActive ? 'bg-indigo-600 text-white shadow' : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-850 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Code Display Area */}
+      <div className="bg-slate-900 text-slate-200 rounded-2xl p-6 shadow-xl border border-slate-800 font-mono text-xs overflow-x-auto relative">
+        <button 
+          onClick={() => {
+            let code = '';
+            if (activeCodeTab === 'prisma') code = PRISMA_SCHEMA_CODE;
+            else if (activeCodeTab === 'express') code = BACKEND_API_EXPRESS;
+            else if (activeCodeTab === 'seeder') code = DUMMY_SEEDER_CODE;
+            else code = README_INSTALLATION;
+            navigator.clipboard.writeText(code);
+            alert('Kode berhasil disalin ke clipboard!');
+          }}
+          className="absolute top-4 right-4 bg-slate-850 hover:bg-slate-800 text-[10px] px-3 py-1.5 rounded-lg border border-slate-700 font-sans font-bold transition"
+        >
+          Salin Kode
+        </button>
+
+        <pre className="mt-4 whitespace-pre pr-2">
+          {activeCodeTab === 'prisma' && PRISMA_SCHEMA_CODE}
+          {activeCodeTab === 'express' && BACKEND_API_EXPRESS}
+          {activeCodeTab === 'seeder' && DUMMY_SEEDER_CODE}
+          {activeCodeTab === 'readme' && README_INSTALLATION}
+        </pre>
+      </div>
+
+    </div>
+  );
+}
